@@ -7,6 +7,11 @@
   const LANE_COLORS = ["#55d8ff", "#61ff9b", "#c683ff", "#ffd45a"];
   const MULTIPLIER_STEP = 15;
   const HOLD_RELEASE_GRACE = 0.075;
+  const SOLO_HP_MAX = 100;
+  const SOLO_HP_START = 50;
+  const SOLO_HP_MISS = 5.5;
+  const SOLO_HP_HOLD_BREAK = 6.5;
+  const SOLO_HP_EMPTY = 1.5;
   const DEFAULT_CONTROLS = {
     p1: ["KeyA", "KeyS", "KeyW", "KeyD"],
     p2: ["ArrowLeft", "ArrowDown", "ArrowUp", "ArrowRight"]
@@ -4462,6 +4467,7 @@
     pendingControls: null,
     listeningBinding: null,
     selectedSong: null,
+    playMode: "duel",
     muted: false,
     audioContext: null,
     masterGain: null,
@@ -4480,6 +4486,8 @@
 
   const elements = {
     screens: $$(".screen"),
+    gameScreen: $("#gameScreen"),
+    resultsScreen: $("#results"),
     backButton: $("#backButton"),
     soundButton: $("#soundButton"),
     songGrid: $("#songGrid"),
@@ -4501,14 +4509,24 @@
     p1Accuracy: $("#p1Accuracy"),
     p2Accuracy: $("#p2Accuracy"),
     duelMarker: $("#duelMarker"),
+    duelMeterWrap: $("#duelMeterWrap"),
+    p1Hud: $("#p1Hud"),
+    p2Hud: $("#p2Hud"),
     winnerText: $("#winnerText"),
     resultSongLabel: $("#resultSongLabel"),
+    p1Result: $("#p1Result"),
+    p2Result: $("#p2Result"),
     resultP1Score: $("#resultP1Score"),
     resultP2Score: $("#resultP2Score"),
     resultP1Stats: $("#resultP1Stats"),
     resultP2Stats: $("#resultP2Stats"),
     replayButton: $("#replayButton"),
     selectButton: $("#selectButton"),
+    gameOverSong: $("#gameOverSong"),
+    gameOverScore: $("#gameOverScore"),
+    gameOverStats: $("#gameOverStats"),
+    gameOverRetry: $("#gameOverRetry"),
+    gameOverSelect: $("#gameOverSelect"),
     toast: $("#toast")
   };
 
@@ -4535,7 +4553,7 @@
   function showScreen(id) {
     state.screen = id;
     elements.screens.forEach((screen) => screen.classList.toggle("active", screen.id === id));
-    elements.backButton.classList.toggle("hidden", ["mainMenu", "gameScreen"].includes(id));
+    elements.backButton.classList.toggle("hidden", ["mainMenu", "gameScreen", "gameOver"].includes(id));
     if (state.p) {
       if (id === "gameScreen") state.p.loop();
       else state.p.noLoop();
@@ -4543,7 +4561,10 @@
   }
 
   function goBack() {
-    if (["songSelect", "settings", "results"].includes(state.screen)) showScreen("mainMenu");
+    if (state.screen === "modeSelect") showScreen("mainMenu");
+    else if (state.screen === "songSelect") showScreen("modeSelect");
+    else if (state.screen === "settings") showScreen("mainMenu");
+    else if (state.screen === "results") showScreen("songSelect");
   }
 
   function songDuration(song) {
@@ -4554,6 +4575,7 @@
   }
 
   function renderSongs() {
+    const solo = state.playMode === "solo";
     elements.songGrid.innerHTML = SONGS.map((song, index) => {
       const duration = songDuration(song);
       const menuTitle = song.menuTitle || song.title;
@@ -4576,7 +4598,7 @@
               <span>${Math.round(duration)}s</span>
               <span>${song.patternLabel || (song.chartStyle === "easy" ? "Leitura limpa" : song.chartStyle === "medium" ? "Síncopes" : "Rajadas")}</span>
             </div>
-            <button class="play-song">INICIAR DUELO</button>
+            <button class="play-song">${solo ? "INICIAR SOLO" : "INICIAR DUELO"}</button>
           </div>
         </article>
       `;
@@ -4592,6 +4614,12 @@
         }
       });
     });
+  }
+
+  function chooseMode(mode) {
+    state.playMode = mode === "solo" ? "solo" : "duel";
+    renderSongs();
+    showScreen("songSelect");
   }
 
   function renderBindings() {
@@ -4785,12 +4813,14 @@
 
   function prepareGame(song, timeline) {
     stopGame(false);
+    const mode = state.playMode === "solo" ? "solo" : "duel";
     const p1Notes = mapCuesToNotes(timeline.chartCues, song, 1);
     const p2Notes = song.identicalCharts
       ? p1Notes.map((note) => ({ ...note }))
       : mapCuesToNotes(timeline.chartCues, song, 2);
     state.game = {
       song,
+      mode,
       timeline,
       duration: timeline.duration,
       status: "countdown",
@@ -4801,21 +4831,26 @@
       buses: null,
       audioBuffer: state.audioBuffers.get(song.id) || null,
       backingSource: null,
-      p1: createPlayerState(p1Notes),
-      p2: createPlayerState(p2Notes),
+      p1: createPlayerState(p1Notes, true),
+      p2: createPlayerState(p2Notes, false),
       particles: [],
       ripples: [],
       beatPulse: 0,
       subPulse: 0,
       lastBeatIndex: -1,
       keyDown: new Set(),
-      ended: false
+      ended: false,
+      gameOverTriggered: false
     };
+
+    elements.gameScreen.classList.toggle("solo-mode", mode === "solo");
+    elements.resultsScreen.classList.remove("solo-results");
+    elements.p1Hud.querySelector(".hud-name").textContent = mode === "solo" ? "JOGADOR" : "JOGADOR 1";
     elements.currentSong.textContent = song.title;
-    elements.currentDifficulty.textContent = `${song.difficulty} • ${song.bpm} BPM • p5.js`;
+    elements.currentDifficulty.textContent = `${song.difficulty} • ${song.bpm} BPM • ${mode === "solo" ? "1 JOGADOR" : "2 JOGADORES"}`;
     elements.p1Score.textContent = "0";
     elements.p2Score.textContent = "0";
-    elements.p1Accuracy.textContent = "100,00%";
+    elements.p1Accuracy.textContent = mode === "solo" ? "100,00% • HP 50" : "100,00%";
     elements.p2Accuracy.textContent = "100,00%";
     elements.songProgress.style.width = "0%";
     elements.duelMarker.style.left = "50%";
@@ -4823,7 +4858,7 @@
     if (state.p) state.p.loop();
   }
 
-  function createPlayerState(notes) {
+  function createPlayerState(notes, isPrimary = false) {
     return {
       notes,
       nextMissIndex: 0,
@@ -4843,6 +4878,9 @@
       activeHolds: [null, null, null, null],
       holdSuccess: 0,
       holdBreaks: 0,
+      health: isPrimary ? SOLO_HP_START : SOLO_HP_MAX,
+      maxHealth: isPrimary ? SOLO_HP_START : SOLO_HP_MAX,
+      healthFlash: 0,
       feedback: { text: "", time: 0, lane: 0 }
     };
   }
@@ -6002,9 +6040,15 @@
       game.elapsed = state.audioContext.currentTime - game.startAt;
       scheduleAudioAhead(game);
       updateMisses(game.p1, game.elapsed, 1);
-      updateMisses(game.p2, game.elapsed, 2);
+      if (game.ended) return;
       updateHoldNotes(game.p1, game.elapsed, "p1", 1);
-      updateHoldNotes(game.p2, game.elapsed, "p2", 2);
+      if (game.ended) return;
+
+      if (game.mode === "duel") {
+        updateMisses(game.p2, game.elapsed, 2);
+        updateHoldNotes(game.p2, game.elapsed, "p2", 2);
+      }
+
       updateBeat(game);
       updateParticles(delta);
       updateHud();
@@ -6012,9 +6056,12 @@
     }
 
     game.p1.lanePress = game.p1.lanePress.map((value) => Math.max(0, value - delta * 6.6));
-    game.p2.lanePress = game.p2.lanePress.map((value) => Math.max(0, value - delta * 6.6));
     game.p1.multiplierFlash *= Math.pow(0.055, delta);
-    game.p2.multiplierFlash *= Math.pow(0.055, delta);
+    game.p1.healthFlash *= Math.pow(0.07, delta);
+    if (game.mode === "duel") {
+      game.p2.lanePress = game.p2.lanePress.map((value) => Math.max(0, value - delta * 6.6));
+      game.p2.multiplierFlash *= Math.pow(0.055, delta);
+    }
   }
 
   function updateBeat(game) {
@@ -6045,7 +6092,9 @@
       player.judged += 1;
       player.feedback = { text: "MISS", time: performance.now(), lane: note.lane };
       spawnMissParticles(playerNumber, note.lane);
+      if (playerNumber === 1) adjustSoloHealth(-SOLO_HP_MISS);
       player.nextMissIndex += 1;
+      if (state.game?.ended) return;
     }
   }
 
@@ -6078,6 +6127,7 @@
     player.score += Math.round(360 * sustainBeats * player.multiplier);
     player.feedback = { text: "SUSTAIN", time: performance.now(), lane };
     spawnHitParticles(playerNumber, lane, "PERFECT");
+    if (playerNumber === 1) adjustSoloHealth(1.8 + Math.min(1.6, sustainBeats * 0.35));
   }
 
   function failHold(player, note, lane, playerNumber) {
@@ -6091,6 +6141,7 @@
     resetPlayerStreak(player);
     player.feedback = { text: "SOLTOU", time: performance.now(), lane };
     spawnMissParticles(playerNumber, lane);
+    if (playerNumber === 1) adjustSoloHealth(-SOLO_HP_HOLD_BREAK);
   }
 
   function releaseHold(playerKey, lane) {
@@ -6124,7 +6175,7 @@
     let playerKey = null;
     let lane = state.controls.p1.indexOf(event.code);
     if (lane !== -1) playerKey = "p1";
-    else {
+    else if (game.mode === "duel") {
       lane = state.controls.p2.indexOf(event.code);
       if (lane !== -1) playerKey = "p2";
     }
@@ -6144,7 +6195,7 @@
     let playerKey = null;
     let lane = state.controls.p1.indexOf(event.code);
     if (lane !== -1) playerKey = "p1";
-    else {
+    else if (game.mode === "duel") {
       lane = state.controls.p2.indexOf(event.code);
       if (lane !== -1) playerKey = "p2";
     }
@@ -6173,18 +6224,20 @@
     if (!candidate || bestDiff > 0.18) {
       resetPlayerStreak(player);
       player.feedback = { text: "VAZIO", time: performance.now(), lane };
+      if (playerKey === "p1") adjustSoloHealth(-SOLO_HP_EMPTY);
       return;
     }
 
     let judgement;
     let base;
     let accuracy;
+    let healthGain;
     if (bestDiff <= 0.043) {
-      judgement = "PERFECT"; base = 1000; accuracy = 1; player.perfect += 1;
+      judgement = "PERFECT"; base = 1000; accuracy = 1; healthGain = 1.35; player.perfect += 1;
     } else if (bestDiff <= 0.088) {
-      judgement = "GREAT"; base = 720; accuracy = 0.84; player.great += 1;
+      judgement = "GREAT"; base = 720; accuracy = 0.84; healthGain = 1.05; player.great += 1;
     } else {
-      judgement = "GOOD"; base = 440; accuracy = 0.58; player.good += 1;
+      judgement = "GOOD"; base = 440; accuracy = 0.58; healthGain = 0.75; player.good += 1;
     }
 
     candidate.hit = true;
@@ -6204,6 +6257,36 @@
     player.score += Math.round(base * accentMultiplier * player.multiplier);
     player.feedback = { text: judgement, time: performance.now(), lane };
     spawnHitParticles(playerKey === "p1" ? 1 : 2, lane, judgement);
+    if (playerKey === "p1") {
+      const chordBonus = candidate.chord ? 0.35 : 0;
+      adjustSoloHealth(healthGain + chordBonus);
+    }
+  }
+
+  function adjustSoloHealth(amount) {
+    const game = state.game;
+    if (!game || game.mode !== "solo" || game.ended) return;
+    const player = game.p1;
+    const before = player.health;
+    player.health = Math.max(0, Math.min(SOLO_HP_MAX, player.health + amount));
+    player.maxHealth = Math.max(player.maxHealth, player.health);
+    player.healthFlash = amount >= 0 ? 1 : -1;
+    if (before > 0 && player.health <= 0) triggerSoloGameOver();
+  }
+
+  function triggerSoloGameOver() {
+    const game = state.game;
+    if (!game || game.mode !== "solo" || game.gameOverTriggered) return;
+    game.gameOverTriggered = true;
+    game.ended = true;
+    game.status = "gameover";
+    stopScheduledAudio();
+    elements.gameOverSong.textContent = `${game.song.title} • ${game.song.difficulty}`;
+    elements.gameOverScore.textContent = game.p1.score.toLocaleString("pt-BR");
+    elements.gameOverStats.innerHTML = buildStats(game.p1);
+    setTimeout(() => {
+      if (state.game === game) showScreen("gameOver");
+    }, 320);
   }
 
   function resetPlayerStreak(player) {
@@ -6224,15 +6307,21 @@
   function updateHud() {
     const game = state.game;
     const p1Acc = getAccuracy(game.p1);
-    const p2Acc = getAccuracy(game.p2);
     elements.p1Score.textContent = game.p1.score.toLocaleString("pt-BR");
-    elements.p2Score.textContent = game.p2.score.toLocaleString("pt-BR");
-    elements.p1Accuracy.textContent = `${p1Acc.toFixed(2).replace(".", ",")}% • ${game.p1.combo} COMBO • ${game.p1.multiplier}x`;
-    elements.p2Accuracy.textContent = `${p2Acc.toFixed(2).replace(".", ",")}% • ${game.p2.combo} COMBO • ${game.p2.multiplier}x`;
+    elements.p1Accuracy.textContent = game.mode === "solo"
+      ? `${p1Acc.toFixed(2).replace(".", ",")}% • ${game.p1.combo} COMBO • ${game.p1.multiplier}x • HP ${Math.ceil(game.p1.health)}`
+      : `${p1Acc.toFixed(2).replace(".", ",")}% • ${game.p1.combo} COMBO • ${game.p1.multiplier}x`;
+
+    if (game.mode === "duel") {
+      const p2Acc = getAccuracy(game.p2);
+      elements.p2Score.textContent = game.p2.score.toLocaleString("pt-BR");
+      elements.p2Accuracy.textContent = `${p2Acc.toFixed(2).replace(".", ",")}% • ${game.p2.combo} COMBO • ${game.p2.multiplier}x`;
+      const scoreRange = Math.max(10000, game.p1.score + game.p2.score);
+      const diff = (game.p2.score - game.p1.score) / scoreRange;
+      elements.duelMarker.style.left = `${50 + Math.max(-42, Math.min(42, diff * 115))}%`;
+    }
+
     elements.songProgress.style.width = `${Math.max(0, Math.min(100, (game.elapsed / game.duration) * 100))}%`;
-    const scoreRange = Math.max(10000, game.p1.score + game.p2.score);
-    const diff = (game.p2.score - game.p1.score) / scoreRange;
-    elements.duelMarker.style.left = `${50 + Math.max(-42, Math.min(42, diff * 115))}%`;
   }
 
   function getAccuracy(player) {
@@ -6253,19 +6342,28 @@
 
     const w = p.width;
     const h = p.height;
-    const boardGap = Math.max(24, Math.min(82, w * 0.065));
-    const boardWidth = Math.min(440, (w - boardGap - 28) / 2);
-    const totalWidth = boardWidth * 2 + boardGap;
-    const leftX = (w - totalWidth) / 2;
-    const rightX = leftX + boardWidth + boardGap;
     const top = Math.max(104, h * 0.13);
     const bottom = h - Math.max(76, h * 0.09);
 
-    drawPlayerBoardP5(p, leftX, top, boardWidth, bottom - top, game.p1, 1, game.song);
-    drawPlayerBoardP5(p, rightX, top, boardWidth, bottom - top, game.p2, 2, game.song);
-    drawMultiplierIndicatorP5(p, leftX, top, boardWidth, bottom - top, game.p1, 1);
-    drawMultiplierIndicatorP5(p, rightX, top, boardWidth, bottom - top, game.p2, 2);
-    drawCenterDividerP5(p, top, bottom, pulse);
+    if (game.mode === "solo") {
+      const boardWidth = Math.min(520, Math.max(260, w - Math.max(136, w * 0.18)));
+      const boardX = (w - boardWidth) / 2;
+      drawPlayerBoardP5(p, boardX, top, boardWidth, bottom - top, game.p1, 1, game.song);
+      drawSoloHealthBarP5(p, boardX, top, boardWidth, bottom - top, game.p1);
+      drawMultiplierIndicatorP5(p, boardX, top, boardWidth, bottom - top, game.p1, 1, "right");
+    } else {
+      const boardGap = Math.max(24, Math.min(82, w * 0.065));
+      const boardWidth = Math.min(440, (w - boardGap - 28) / 2);
+      const totalWidth = boardWidth * 2 + boardGap;
+      const leftX = (w - totalWidth) / 2;
+      const rightX = leftX + boardWidth + boardGap;
+      drawPlayerBoardP5(p, leftX, top, boardWidth, bottom - top, game.p1, 1, game.song);
+      drawPlayerBoardP5(p, rightX, top, boardWidth, bottom - top, game.p2, 2, game.song);
+      drawMultiplierIndicatorP5(p, leftX, top, boardWidth, bottom - top, game.p1, 1);
+      drawMultiplierIndicatorP5(p, rightX, top, boardWidth, bottom - top, game.p2, 2);
+      drawCenterDividerP5(p, top, bottom, pulse);
+    }
+
     drawRipplesP5(p, delta);
     drawParticlesP5(p);
   }
@@ -6868,10 +6966,95 @@
     p.triangle(x, y - 5, x, y + 5, x + direction * length * 0.64, y + bend * 0.5);
   }
 
-  function drawMultiplierIndicatorP5(p, x, y, width, height, player, playerNumber) {
-    const outsideSpace = playerNumber === 1 ? x : p.width - (x + width);
+  function drawSoloHealthBarP5(p, x, y, width, height, player) {
+    const outsideSpace = x;
+    const centerX = outsideSpace >= 68 ? x - 47 : x + 24;
+    const trackHeight = Math.max(112, Math.min(height - 110, height * 0.70));
+    const centerY = y + height * 0.50;
+    const topY = centerY - trackHeight * 0.50;
+    const bottomY = centerY + trackHeight * 0.50;
+    const hp = Math.max(0, Math.min(100, player.health));
+    const ratio = hp / 100;
+    const heartY = bottomY - trackHeight * ratio;
+    const pulse = state.game?.beatPulse || 0;
+    const flash = player.healthFlash || 0;
+
+    p.push();
+    const ctx = p.drawingContext;
+    ctx.save();
+    ctx.shadowBlur = 13 + Math.abs(flash) * 18 + pulse * 6;
+    ctx.shadowColor = hp <= 28 ? "#ff3c4f" : hp < 55 ? "#ffb12e" : "#4dff9c";
+
+    p.noStroke();
+    p.fill(7, 6, 18, 224);
+    p.rect(centerX - 17, topY - 19, 34, trackHeight + 50, 18);
+    p.stroke(255, 255, 255, 42);
+    p.strokeWeight(1.35);
+    p.noFill();
+    p.rect(centerX - 17, topY - 19, 34, trackHeight + 50, 18);
+
+    const tubeX = centerX - 6;
+    const tubeW = 12;
+    p.noStroke();
+    p.fill(255, 255, 255, 28);
+    p.rect(tubeX, topY, tubeW, trackHeight, 8);
+
+    const gradient = ctx.createLinearGradient(0, bottomY, 0, topY);
+    gradient.addColorStop(0, "#ff334f");
+    gradient.addColorStop(0.32, "#ff7b2d");
+    gradient.addColorStop(0.57, "#f5db4b");
+    gradient.addColorStop(1, "#4dff9c");
+    ctx.fillStyle = gradient;
+    const fillHeight = Math.max(3, trackHeight * ratio);
+    ctx.beginPath();
+    ctx.roundRect(tubeX + 2, bottomY - fillHeight, tubeW - 4, fillHeight, 6);
+    ctx.fill();
+
+    p.fill(hp <= 28 ? "#ff334f" : hp < 55 ? "#ffb12e" : "#4dff9c");
+    p.circle(centerX, bottomY + 13, 24);
+    p.fill(255, 255, 255, 65);
+    p.circle(centerX - 4, bottomY + 9, 6);
+
+    p.stroke(255, 255, 255, 55);
+    p.strokeWeight(1);
+    for (let i = 0; i <= 10; i++) {
+      const ty = bottomY - (trackHeight * i / 10);
+      const len = i % 5 === 0 ? 9 : 5;
+      p.line(centerX + 9, ty, centerX + 9 + len, ty);
+    }
+
+    p.noStroke();
+    p.textAlign(p.CENTER, p.CENTER);
+    p.textStyle(p.BOLD);
+    p.textSize(7.5);
+    p.fill(77, 255, 156, 190);
+    p.text("SAFE", centerX, topY - 10);
+    p.fill(255, 89, 100, 205);
+    p.text("PERIGO", centerX, bottomY + 32);
+
+    p.push();
+    p.translate(centerX, heartY);
+    p.scale(1 + pulse * 0.20 + Math.max(0, flash) * 0.08);
+    ctx.shadowBlur = 18 + pulse * 14;
+    ctx.shadowColor = hp <= 28 ? "#ff334f" : hp < 55 ? "#ffb12e" : "#4dff9c";
+    p.fill(hp <= 28 ? "#ff334f" : hp < 55 ? "#ffb12e" : "#4dff9c");
+    p.textSize(23);
+    p.text("♥", 0, 0);
+    p.pop();
+
+    ctx.shadowBlur = 0;
+    p.fill(255, 255, 255, 220);
+    p.textSize(8.5);
+    p.text(`${Math.ceil(hp)} HP`, centerX, centerY);
+    ctx.restore();
+    p.pop();
+  }
+
+  function drawMultiplierIndicatorP5(p, x, y, width, height, player, playerNumber, sideOverride = null) {
+    const placeLeft = sideOverride ? sideOverride === "left" : playerNumber === 1;
+    const outsideSpace = placeLeft ? x : p.width - (x + width);
     const canStayOutside = outsideSpace >= 72;
-    const centerX = playerNumber === 1
+    const centerX = placeLeft
       ? (canStayOutside ? x - 47 : x + 34)
       : (canStayOutside ? x + width + 47 : x + width - 34);
     const centerY = y + height * 0.48;
@@ -7126,25 +7309,35 @@
     if (!game) return;
     const w = p.width;
     const h = p.height;
-    const gap = Math.max(24, Math.min(82, w * 0.065));
-    const boardWidth = Math.min(440, (w - gap - 28) / 2);
-    const totalWidth = boardWidth * 2 + gap;
-    const leftX = (w - totalWidth) / 2;
-    const laneWidth = boardWidth / 4;
     const top = Math.max(104, h * 0.13);
     const bottom = h - Math.max(76, h * 0.09);
+    let boardWidth;
+    let leftX;
+    let gap = 0;
+
+    if (game.mode === "solo") {
+      boardWidth = Math.min(520, Math.max(260, w - Math.max(136, w * 0.18)));
+      leftX = (w - boardWidth) / 2;
+    } else {
+      gap = Math.max(24, Math.min(82, w * 0.065));
+      boardWidth = Math.min(440, (w - gap - 28) / 2);
+      const totalWidth = boardWidth * 2 + gap;
+      leftX = (w - totalWidth) / 2;
+    }
+
+    const laneWidth = boardWidth / 4;
     const receptorY = bottom - Math.min(64, (bottom - top) * 0.09);
 
     p.push();
     p.noStroke();
     for (const particle of game.particles) {
-      const boardX = particle.playerNumber === 1 ? leftX : leftX + boardWidth + gap;
+      const boardX = game.mode === "solo" || particle.playerNumber === 1 ? leftX : leftX + boardWidth + gap;
       const originX = boardX + particle.lane * laneWidth + laneWidth / 2;
       const age = 1 - particle.life;
-      const x = originX + particle.vx * age;
-      const y = receptorY + particle.vy * age;
+      const px = originX + particle.vx * age;
+      const py = receptorY + particle.vy * age;
       p.fill(hexWithAlpha(particle.color, Math.max(0, particle.life)));
-      p.circle(x, y, particle.size * particle.life * 2);
+      p.circle(px, py, particle.size * particle.life * 2);
     }
     p.pop();
   }
@@ -7218,13 +7411,23 @@
     stopScheduledAudio();
     const p1 = game.p1;
     const p2 = game.p2;
-    const winner = p1.score === p2.score ? "Empate perfeito!" : p1.score > p2.score ? "Jogador 1 venceu!" : "Jogador 2 venceu!";
-    elements.winnerText.textContent = winner;
-    elements.resultSongLabel.textContent = `${game.song.title} • ${game.song.difficulty}`;
-    elements.resultP1Score.textContent = p1.score.toLocaleString("pt-BR");
-    elements.resultP2Score.textContent = p2.score.toLocaleString("pt-BR");
-    elements.resultP1Stats.innerHTML = buildStats(p1);
-    elements.resultP2Stats.innerHTML = buildStats(p2);
+
+    elements.resultsScreen.classList.toggle("solo-results", game.mode === "solo");
+    elements.p1Result.querySelector("span").textContent = game.mode === "solo" ? "JOGADOR" : "JOGADOR 1";
+    if (game.mode === "solo") {
+      elements.winnerText.textContent = "Música concluída!";
+      elements.resultSongLabel.textContent = `${game.song.title} • ${game.song.difficulty} • HP ${Math.ceil(p1.health)}`;
+      elements.resultP1Score.textContent = p1.score.toLocaleString("pt-BR");
+      elements.resultP1Stats.innerHTML = buildStats(p1);
+    } else {
+      const winner = p1.score === p2.score ? "Empate perfeito!" : p1.score > p2.score ? "Jogador 1 venceu!" : "Jogador 2 venceu!";
+      elements.winnerText.textContent = winner;
+      elements.resultSongLabel.textContent = `${game.song.title} • ${game.song.difficulty}`;
+      elements.resultP1Score.textContent = p1.score.toLocaleString("pt-BR");
+      elements.resultP2Score.textContent = p2.score.toLocaleString("pt-BR");
+      elements.resultP1Stats.innerHTML = buildStats(p1);
+      elements.resultP2Stats.innerHTML = buildStats(p2);
+    }
     setTimeout(() => showScreen("results"), 420);
   }
 
@@ -7332,7 +7535,8 @@
   }
 
   function wireEvents() {
-    $$('[data-action="play"]').forEach((button) => button.addEventListener("click", () => showScreen("songSelect")));
+    $$('[data-action="play"]').forEach((button) => button.addEventListener("click", () => showScreen("modeSelect")));
+    $$('[data-mode]').forEach((button) => button.addEventListener("click", () => chooseMode(button.dataset.mode)));
     $$('[data-action="settings"]').forEach((button) => button.addEventListener("click", () => {
       renderBindings();
       showScreen("settings");
@@ -7353,6 +7557,11 @@
       stopGame();
       showScreen("songSelect");
     });
+    elements.gameOverRetry.addEventListener("click", () => state.selectedSong && startSelectedSong(state.selectedSong.id));
+    elements.gameOverSelect.addEventListener("click", () => {
+      stopGame();
+      showScreen("songSelect");
+    });
 
     window.addEventListener("keydown", (event) => {
       if (handleRebind(event)) return;
@@ -7370,6 +7579,7 @@
     wireEvents();
     validateCharts();
     validateMultiplierSystem();
+    console.info("[NDB p5] Modos validados: solo usa apenas os controles do Jogador 1; duelo preserva J1 e J2.");
     initP5();
   }
 
