@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#090716" />
+  <title>Neon Duel Beats</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="noise"></div>
+  <div id="app">
+    <header class="topbar">
+      <button id="backButton" class="icon-button hidden" aria-label="Voltar">←</button>
+      <div class="brand-mini">NDB</div>
+      <button id="soundButton" class="icon-button" aria-label="Ativar ou desativar som">🔊</button>
+    </header>
+
+    <main>
+      <section id="mainMenu" class="screen active">
+        <div class="hero">
+          <div class="eyebrow">BATALHA LOCAL • 2 JOGADORES</div>
+          <h1>
+            <span>NEON</span>
+            <span class="accent">DUEL</span>
+            <span>BEATS</span>
+          </h1>
+          <p>Acerte as notas no ritmo, mantenha o combo e domine a pista.</p>
+        </div>
+
+        <div class="menu-actions">
+          <button class="main-button primary" data-action="play">
+            <span class="button-icon">▶</span>
+            <span>
+              <strong>JOGAR</strong>
+              <small>Escolha uma música e comece o duelo</small>
+            </span>
+          </button>
+          <button class="main-button" data-action="settings">
+            <span class="button-icon">⌨</span>
+            <span>
+              <strong>CONFIGURAÇÕES</strong>
+              <small>Troque as quatro teclas de cada jogador</small>
+            </span>
+          </button>
+        </div>
+
+        <div class="menu-footer">
+          <span>J1: W A S D</span>
+          <span class="separator">×</span>
+          <span>J2: SETAS</span>
+        </div>
+      </section>
+
+      <section id="songSelect" class="screen">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">ESCOLHA SUA BATALHA</div>
+            <h2>Músicas & dificuldades</h2>
+          </div>
+          <p>Cada dificuldade possui música, velocidade e padrões próprios.</p>
+        </div>
+        <div id="songGrid" class="song-grid"></div>
+      </section>
+
+      <section id="settings" class="screen">
+        <div class="section-heading">
+          <div>
+            <div class="eyebrow">CONTROLES LOCAIS</div>
+            <h2>Configurações</h2>
+          </div>
+          <p>Clique em uma tecla e pressione o novo botão.</p>
+        </div>
+
+        <div class="settings-grid">
+          <div class="player-settings player-one-panel">
+            <div class="player-label">JOGADOR 1</div>
+            <div id="p1Bindings" class="bindings"></div>
+          </div>
+          <div class="player-settings player-two-panel">
+            <div class="player-label">JOGADOR 2</div>
+            <div id="p2Bindings" class="bindings"></div>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button id="resetControls" class="secondary-button">Restaurar padrão</button>
+          <button id="saveControls" class="secondary-button strong">Salvar controles</button>
+        </div>
+        <div id="settingsMessage" class="settings-message" aria-live="polite"></div>
+      </section>
+
+      <section id="gameScreen" class="screen game-screen">
+        <div class="game-hud">
+          <div class="hud-player p1-hud">
+            <span class="hud-name">JOGADOR 1</span>
+            <strong id="p1Score">0</strong>
+            <span id="p1Accuracy">100,00%</span>
+          </div>
+          <div class="song-hud">
+            <strong id="currentSong">Música</strong>
+            <span id="currentDifficulty">Dificuldade</span>
+            <div class="progress-track"><div id="songProgress" class="progress-fill"></div></div>
+          </div>
+          <div class="hud-player p2-hud">
+            <span class="hud-name">JOGADOR 2</span>
+            <strong id="p2Score">0</strong>
+            <span id="p2Accuracy">100,00%</span>
+          </div>
+        </div>
+
+        <div class="duel-meter-wrap">
+          <span>J1</span>
+          <div class="duel-meter"><div id="duelMarker" class="duel-marker"></div></div>
+          <span>J2</span>
+        </div>
+
+        <div id="gameCanvasContainer" aria-label="Área do jogo de ritmo"></div>
+
+        <div id="countdown" class="countdown hidden"></div>
+        <div id="pauseOverlay" class="overlay hidden">
+          <div class="modal">
+            <div class="eyebrow">JOGO PAUSADO</div>
+            <h2>Respira e volta no ritmo.</h2>
+            <button id="resumeButton" class="main-button primary compact">Continuar</button>
+            <button id="quitButton" class="main-button compact">Sair para o menu</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="results" class="screen">
+        <div class="results-card">
+          <div class="eyebrow">RESULTADO FINAL</div>
+          <h2 id="winnerText">Jogador 1 venceu!</h2>
+          <p id="resultSongLabel">Música</p>
+
+          <div class="result-columns">
+            <div class="result-player p1-result">
+              <span>JOGADOR 1</span>
+              <strong id="resultP1Score">0</strong>
+              <div class="result-stats" id="resultP1Stats"></div>
+            </div>
+            <div class="versus">VS</div>
+            <div class="result-player p2-result">
+              <span>JOGADOR 2</span>
+              <strong id="resultP2Score">0</strong>
+              <div class="result-stats" id="resultP2Stats"></div>
+            </div>
+          </div>
+
+          <div class="results-actions">
+            <button id="replayButton" class="main-button primary compact">Jogar novamente</button>
+            <button id="selectButton" class="main-button compact">Escolher outra música</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="toast" class="toast hidden" aria-live="polite"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.10/p5.min.js" onerror="this.onerror=null;this.src='https://cdn.jsdelivr.net/npm/p5@1.11.10/lib/p5.min.js'"></script>
+  <script src="game.js"></script>
+</body>
+</html>

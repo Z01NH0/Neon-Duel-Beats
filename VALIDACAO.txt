@@ -1,0 +1,33 @@
+NEON DUEL BEATS — VULCAN BLOOD STEM REWORK
+
+Base preservada:
+- City Walk (Fácil)
+- Iron Fist V3 (Médio)
+- Mesmo áudio final vulcan-blood.ogg no jogo
+- Nenhum stem foi incluído no projeto final
+
+Análise dos stems:
+- BPM informado/detectado: 195.00
+- Período detectado pelo metrônomo: 0.30771547 s (194.985 BPM)
+- Fase inicial do metrônomo no stem: 0.03977 s
+- Compensação stem -> áudio OGG do jogo: -23.22 ms
+- RMS do stem vocal descartado: 0.00037627
+- Regiões de solo/lead usadas: 27.7-41.3s, 65.0-70.8s, 107.2-112.8s, 121.4-176.0s, 186.4-194.2s, 231.0-238.2s, 239.4-254.0s, 265.2-268.7s
+
+Novo chart Vulcan Blood:
+- 2629 eventos
+- 2652 notas por jogador
+- 692 eventos de palm mute (692 notas), todos na pista esquerda
+- 1194 eventos guiados pela guitarra principal/lead
+- 1435 eventos guiados por riffs/acordes
+- 23 acordes
+- 21 sustains/bends
+- 0 palm mutes em regiões classificadas como solo: 0 encontrados
+- Colisões de intervalo por pista: 0
+- Conflitos de sustain: 0
+- J1 e J2 continuam com chart idêntico
+
+Observações:
+- Guitarra rítmica/palm mute usa somente a seta esquerda.
+- Quando a guitarra lead entra, o chart suprime o riff de base e segue os ataques/pitch da lead nas outras três pistas.
+- Bateria e baixo são usados para confirmar pulsação e impactos, não para criar notas independentes em excesso.
