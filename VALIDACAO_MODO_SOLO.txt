@@ -1,0 +1,54 @@
+NEON DUEL BEATS — VALIDAÇÃO DO MODO SOLO
+
+Base preservada:
+- City Walk (Fácil)
+- Iron Fist V3 (Médio)
+- Vulcan Blood refeito por stems (Difícil)
+- Modo de 2 jogadores preservado
+- Mapas, sustains, palm mutes, multiplicadores e cenários preservados
+
+Fluxo:
+- JOGAR abre a seleção 1 Jogador / 2 Jogadores
+- Ambos os modos usam a mesma seleção de três músicas
+- Voltar da seleção de músicas retorna à seleção de modo
+
+Modo 1 jogador:
+- Usa exclusivamente as quatro teclas configuradas para o Jogador 1
+- A pista do jogador fica centralizada
+- O mapa de notas é o mesmo mapa completo já existente
+- HP inicial: 50 / 100
+- Perfect: +1,35 HP
+- Great: +1,05 HP
+- Good: +0,75 HP
+- Acordes concedem +0,35 HP adicional
+- Sustains completos concedem bônus conforme a duração
+- Miss: -5,5 HP
+- Hold quebrado: -6,5 HP
+- Pressão vazia: -1,5 HP
+- HP limitado entre 0 e 100
+- 0 HP interrompe o áudio e abre a tela de Game Over
+
+Visual:
+- Termômetro vertical à esquerda da pista
+- Gradiente vermelho -> amarelo -> verde
+- Coração começa no meio da barra e acompanha o HP
+- Coração pulsa na batida da música
+- Multiplicador permanece independente e aparece à direita no modo solo
+
+Testes executados:
+- Sintaxe JavaScript: OK
+- IDs HTML duplicados: 0
+- Seleção de modo solo: OK
+- Seleção de modo duelo: OK
+- Modo solo oculta J2 e medidor de duelo: OK
+- Modo duelo exibe J1, J2 e medidor: OK
+- Teclas do Jogador 2 ignoradas no solo: OK
+- Teclas do Jogador 1 controlam o solo: OK
+- Acerto Perfect elevou HP de 50 para 51,35: OK
+- HP zerado abriu Game Over: OK
+- Mapas validados sem duplicatas e com J1/J2 idênticos: OK
+
+
+AJUSTE DE BALANCEAMENTO V1.1
+- Barra de HP aproximadamente 25% mais compacta
+- Dano de erros reduzido sem alterar ganhos de vida
