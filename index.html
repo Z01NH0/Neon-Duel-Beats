@@ -19,7 +19,7 @@
     <main>
       <section id="mainMenu" class="screen active">
         <div class="hero">
-          <div class="eyebrow">BATALHA LOCAL • 2 JOGADORES</div>
+          <div class="eyebrow">RITMO LOCAL • 1 OU 2 JOGADORES</div>
           <h1>
             <span>NEON</span>
             <span class="accent">DUEL</span>
@@ -33,7 +33,7 @@
             <span class="button-icon">▶</span>
             <span>
               <strong>JOGAR</strong>
-              <small>Escolha uma música e comece o duelo</small>
+              <small>Escolha o modo e entre no ritmo</small>
             </span>
           </button>
           <button class="main-button" data-action="settings">
@@ -49,6 +49,31 @@
           <span>J1: W A S D</span>
           <span class="separator">×</span>
           <span>J2: SETAS</span>
+        </div>
+      </section>
+
+      <section id="modeSelect" class="screen mode-screen">
+        <div class="mode-select-card">
+          <div class="eyebrow">ESCOLHA O MODO</div>
+          <h2>Como você quer jogar?</h2>
+          <p>No modo solo, sobreviva até o fim da música. No duelo, os dois jogadores competem normalmente.</p>
+
+          <div class="mode-options">
+            <button class="mode-button solo" data-mode="solo">
+              <span class="mode-icon">♥</span>
+              <span>
+                <strong>1 JOGADOR</strong>
+                <small>Uma pista central, controles do Jogador 1 e barra de HP.</small>
+              </span>
+            </button>
+            <button class="mode-button duel" data-mode="duel">
+              <span class="mode-icon">⚔</span>
+              <span>
+                <strong>2 JOGADORES</strong>
+                <small>O duelo local original, com placar e disputa entre os dois lados.</small>
+              </span>
+            </button>
+          </div>
         </div>
       </section>
 
@@ -91,8 +116,8 @@
       </section>
 
       <section id="gameScreen" class="screen game-screen">
-        <div class="game-hud">
-          <div class="hud-player p1-hud">
+        <div id="gameHud" class="game-hud">
+          <div id="p1Hud" class="hud-player p1-hud">
             <span class="hud-name">JOGADOR 1</span>
             <strong id="p1Score">0</strong>
             <span id="p1Accuracy">100,00%</span>
@@ -102,14 +127,14 @@
             <span id="currentDifficulty">Dificuldade</span>
             <div class="progress-track"><div id="songProgress" class="progress-fill"></div></div>
           </div>
-          <div class="hud-player p2-hud">
+          <div id="p2Hud" class="hud-player p2-hud">
             <span class="hud-name">JOGADOR 2</span>
             <strong id="p2Score">0</strong>
             <span id="p2Accuracy">100,00%</span>
           </div>
         </div>
 
-        <div class="duel-meter-wrap">
+        <div id="duelMeterWrap" class="duel-meter-wrap">
           <span>J1</span>
           <div class="duel-meter"><div id="duelMarker" class="duel-marker"></div></div>
           <span>J2</span>
@@ -134,14 +159,14 @@
           <h2 id="winnerText">Jogador 1 venceu!</h2>
           <p id="resultSongLabel">Música</p>
 
-          <div class="result-columns">
-            <div class="result-player p1-result">
+          <div id="resultColumns" class="result-columns">
+            <div id="p1Result" class="result-player p1-result">
               <span>JOGADOR 1</span>
               <strong id="resultP1Score">0</strong>
               <div class="result-stats" id="resultP1Stats"></div>
             </div>
-            <div class="versus">VS</div>
-            <div class="result-player p2-result">
+            <div id="resultVersus" class="versus">VS</div>
+            <div id="p2Result" class="result-player p2-result">
               <span>JOGADOR 2</span>
               <strong id="resultP2Score">0</strong>
               <div class="result-stats" id="resultP2Stats"></div>
@@ -151,6 +176,21 @@
           <div class="results-actions">
             <button id="replayButton" class="main-button primary compact">Jogar novamente</button>
             <button id="selectButton" class="main-button compact">Escolher outra música</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="gameOver" class="screen">
+        <div class="game-over-card">
+          <div id="gameOverHeart" class="game-over-heart">♥</div>
+          <div class="eyebrow">SEM HP</div>
+          <h2>GAME OVER</h2>
+          <p id="gameOverSong">A música venceu desta vez.</p>
+          <strong id="gameOverScore" class="game-over-score">0</strong>
+          <div id="gameOverStats" class="result-stats game-over-stats"></div>
+          <div class="results-actions">
+            <button id="gameOverRetry" class="main-button primary compact">Tentar novamente</button>
+            <button id="gameOverSelect" class="main-button compact">Escolher outra música</button>
           </div>
         </div>
       </section>
