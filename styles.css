@@ -588,3 +588,186 @@ main { min-height: 100vh; }
   .game-hud { inset: 8px; gap: 8px; }
   .hud-player, .song-hud { padding: 9px 10px; }
 }
+
+/* ===== Modo 1 jogador ===== */
+.mode-screen.active,
+#gameOver.active {
+  display: grid;
+  place-items: center;
+}
+
+.mode-select-card,
+.game-over-card {
+  width: min(860px, 100%);
+  padding: clamp(26px, 5vw, 48px);
+  border-radius: 30px;
+  text-align: center;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(44,243,255,.15), transparent 38%),
+    radial-gradient(circle at 82% 100%, rgba(255,60,166,.16), transparent 42%),
+    rgba(20,17,43,.92);
+  border: 1px solid rgba(255,255,255,.14);
+  box-shadow: var(--shadow);
+}
+
+.mode-select-card h2,
+.game-over-card h2 {
+  margin: 12px 0 10px;
+  font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+  font-size: clamp(2.4rem, 7vw, 5.2rem);
+  font-weight: 400;
+}
+
+.mode-select-card > p,
+.game-over-card > p {
+  max-width: 650px;
+  margin: 0 auto 30px;
+  color: var(--muted);
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.mode-button {
+  min-height: 190px;
+  padding: 28px;
+  border-radius: 24px;
+  border: 1px solid rgba(255,255,255,.13);
+  color: white;
+  background: rgba(255,255,255,.045);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  transition: transform .2s ease, border-color .2s ease, background .2s ease, box-shadow .2s ease;
+}
+
+.mode-button:hover {
+  transform: translateY(-5px);
+  background: rgba(255,255,255,.08);
+}
+
+.mode-button.solo:hover {
+  border-color: rgba(77,255,156,.65);
+  box-shadow: 0 20px 60px rgba(77,255,156,.12);
+}
+
+.mode-button.duel:hover {
+  border-color: rgba(255,60,166,.65);
+  box-shadow: 0 20px 60px rgba(255,60,166,.12);
+}
+
+.mode-icon {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  font-size: 2.3rem;
+  background: rgba(255,255,255,.08);
+}
+
+.mode-button.solo .mode-icon {
+  color: #69ffad;
+  text-shadow: 0 0 24px rgba(77,255,156,.65);
+}
+
+.mode-button.duel .mode-icon {
+  color: #ff72bd;
+  text-shadow: 0 0 24px rgba(255,60,166,.65);
+}
+
+.mode-button strong {
+  display: block;
+  font-size: 1.25rem;
+  letter-spacing: .08em;
+}
+
+.mode-button small {
+  display: block;
+  max-width: 320px;
+  margin-top: 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.game-screen.solo-mode .game-hud {
+  grid-template-columns: minmax(190px, 290px) minmax(250px, 390px);
+  justify-content: center;
+}
+
+.game-screen.solo-mode .p2-hud,
+.game-screen.solo-mode .duel-meter-wrap {
+  display: none;
+}
+
+.game-screen.solo-mode .p1-hud {
+  text-align: center;
+  border-color: rgba(77,255,156,.34);
+}
+
+.game-screen.solo-mode .p1-hud .hud-name {
+  color: var(--success);
+}
+
+#results.solo-results .result-columns {
+  grid-template-columns: minmax(280px, 560px);
+  justify-content: center;
+}
+
+#results.solo-results .p2-result,
+#results.solo-results .versus {
+  display: none;
+}
+
+#results.solo-results .p1-result {
+  border-color: rgba(77,255,156,.32);
+  background: linear-gradient(145deg, rgba(77,255,156,.08), rgba(255,255,255,.035));
+}
+
+.game-over-card {
+  width: min(680px, 100%);
+  background:
+    radial-gradient(circle at 50% 12%, rgba(255,89,100,.22), transparent 38%),
+    rgba(25,10,25,.95);
+  border-color: rgba(255,89,100,.28);
+}
+
+.game-over-heart {
+  margin: 0 auto 8px;
+  font-size: clamp(4rem, 12vw, 7rem);
+  color: var(--danger);
+  text-shadow: 0 0 34px rgba(255,89,100,.65);
+  animation: brokenHeart 1s ease-in-out infinite alternate;
+}
+
+@keyframes brokenHeart {
+  from { transform: scale(.92) rotate(-4deg); opacity: .78; }
+  to { transform: scale(1.05) rotate(4deg); opacity: 1; }
+}
+
+.game-over-score {
+  display: block;
+  margin: 8px 0 26px;
+  font-size: clamp(2.4rem, 8vw, 5rem);
+}
+
+.game-over-stats {
+  max-width: 520px;
+  margin: 0 auto 26px;
+}
+
+@media (max-width: 700px) {
+  .mode-options { grid-template-columns: 1fr; }
+  .mode-button { min-height: 145px; padding: 22px; }
+  .game-screen.solo-mode .game-hud {
+    grid-template-columns: 1fr;
+  }
+  .game-screen.solo-mode .song-hud { grid-row: 1; }
+  .game-screen.solo-mode .p1-hud { grid-row: 2; }
+}
