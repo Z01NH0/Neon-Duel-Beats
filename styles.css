@@ -233,7 +233,7 @@ main { min-height: 100vh; }
 .menu-footer .separator { color: var(--p2); }
 
 .section-heading {
-  max-width: 1180px;
+  max-width: 1420px;
   margin: 0 auto 34px;
   display: flex;
   align-items: end;
@@ -251,10 +251,10 @@ main { min-height: 100vh; }
 .section-heading > p { max-width: 420px; margin: 0 0 8px; color: var(--muted); }
 
 .song-grid {
-  max-width: 1180px;
+  max-width: 1420px;
   margin: auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 22px;
 }
 
@@ -305,6 +305,32 @@ main { min-height: 100vh; }
 }
 
 @keyframes cardSpin { to { transform: rotate(405deg); } }
+.future-song-card {
+  cursor: default;
+  border-style: dashed;
+  border-color: rgba(155, 139, 255, .28);
+  filter: saturate(.72);
+}
+.future-song-card:hover { transform: none; border-color: rgba(155, 139, 255, .38); }
+.future-song-art {
+  background: radial-gradient(circle at 50% 30%, #6f63b8 0%, #292248 38%, #111022 72%, #080713 100%);
+}
+.future-song-art::before, .future-song-art::after { opacity: .38; }
+.future-orbit {
+  position: absolute; inset: 19%; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 0 38px rgba(133,111,255,.24), inset 0 0 32px rgba(91,245,255,.08);
+  animation: cardSpin 13s linear infinite;
+}
+.future-orbit::after {
+  content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%;
+  left: 50%; top: -6px; background: #b8adff; box-shadow: 0 0 18px #8f7cff;
+}
+.future-lock {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  font-size: 4rem; color: rgba(255,255,255,.68); text-shadow: 0 0 24px rgba(141,122,255,.8);
+}
+.future-song-card .play-song:disabled { cursor: not-allowed; opacity: .58; }
 
 .wave-bars {
   position: absolute;
@@ -564,8 +590,15 @@ main { min-height: 100vh; }
   font-weight: 700;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
+  .song-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
   .song-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
   .song-card { min-height: 360px; }
   .settings-grid { grid-template-columns: 1fr; }
   .section-heading { align-items: start; flex-direction: column; }
